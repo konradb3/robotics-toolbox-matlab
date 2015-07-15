@@ -70,6 +70,17 @@ classdef TreeLink < handle
             end
         end
         
+        function addLink(r, L, p)
+            if ischar(p)
+                par = find(strcmp(r.names, p));
+            else
+                par = p;
+            end
+            
+            r.links = [r.links L];
+            r.parent = [r.parent par];
+        end
+        
         function set.offset(r, v)
             if length(v) ~= length(v)
                 error('offset vector length must equal number DOF');
