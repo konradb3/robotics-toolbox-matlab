@@ -1,10 +1,18 @@
-function [ t, allt ] = fkine( robot, q, tip, varargin )
+function [ t, allt ] = fkine( robot, q, varargin )
 %FKINE Summary of this function goes here
 %   Detailed explanation goes here
 
-opt.base = 0;
+if nargin < 3
+    tip = robot.n;
+else
+    tip = varargin{3};
+end
 
-opt = tb_optparse(opt, varargin);
+if nargin < 4
+    base = 0;
+else
+    base = varargin{4};
+end
 
 if ischar(tip)
     ctip = find(strcmp(robot.names, tip));
@@ -12,10 +20,10 @@ else
     ctip = tip;
 end
 
-if ischar(opt.base)
-    cbase = find(strcmp(robot.names, opt.base));
+if ischar(base)
+    cbase = find(strcmp(robot.names, base));
 else
-    cbase = opt.base;
+    cbase = base;
 end
 
 t = eye(4, 4);

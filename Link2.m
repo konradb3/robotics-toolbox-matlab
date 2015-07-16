@@ -3,15 +3,21 @@ classdef Link2 < handle
     %   Detailed explanation goes here
     
     properties
-        name
-        type
-        axis
-        offset
-        qlim
+        name % joint coordinate name
+        type % type 'revolute' or 'prismatic'
+        axis % axis of rotation/translation
+        offset % joint coordinate offset
+        qlim % joint coordinate limits (2x1)
         
-        transform
+        transform % link transformation
         
-        inertia
+        spatial_inertia % spatial inertia of link
+    end
+    
+    properties (Dependent = true)
+        m % dynamic: link mass
+        r % dynamic: position of COM with respect to link frame (3x1)
+        I % dynamic: inertia of link with respect to COM (3x3)
     end
     
     methods
@@ -46,7 +52,7 @@ classdef Link2 < handle
                 opt.qlim = [];
                 opt.type = {'revolute', 'prismatic'};
                 opt.transform = zeros(4);
-                opt.inertia = zeros(6);
+                opt.inertia = eye(6);
                 opt.sym = false;
                 
                 [opt,args] = tb_optparse(opt, varargin);
@@ -60,7 +66,7 @@ classdef Link2 < handle
                     
                     l.transform = value( opt.transform, opt);
                     
-                    l.inertia = value( opt.inertia, opt);
+                    l.spatial_inertia = value( opt.inertia, opt);
                 end
             end
             
@@ -131,6 +137,87 @@ classdef Link2 < handle
             end
             T = j_trans * L.transform;
         end
+        
+        function v = twist(l, qd)
+            if strcmp(l.type, 'revolute')
+                v = [0, 0, 0, l.axis] * qd;
+            else
+                v = [l.axis, 0, 0, 0] * qd;
+            end
+        end
+        
+        function set.I(l, v)
+            %Link.I Set link inertia
+            %
+            % L.I = [Ixx Iyy Izz] sets link inertia to a diagonal matrix.
+            %
+            % L.I = [Ixx Iyy Izz Ixy Iyz Ixz] sets link inertia to a symmetric matrix with
+            % specified inertia and product of intertia elements.
+            %
+            % L.I = M set Link inertia matrix to M (3x3) which must be symmetric.
+            if isempty(v)
+                return;
+            end
+            
+            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            
+            if all(size(v) == [3 3])
+                if isa(v, 'double') && norm(v-v') > eps
+                    error('inertia matrix must be symmetric');
+                end
+                tmp_I = v;
+            elseif length(v) == 3
+                tmp_I = diag(v);
+            elseif length(v) == 6
+                tmp_I = [ v(1) v(4) v(6)
+                    v(4) v(2) v(5)
+                    v(6) v(5) v(3) ];
+            else
+                error('RTB:Link:badarg', 'must set I to 3-vector, 6-vector or symmetric 3x3');
+            end
+            
+            l.spatial_inertia = mcI(tmp_m, tmp_r, tmp_I);
+        end % set.I()
+        
+        function i = get.I(l)
+            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            i = tmp_I;
+        end % get.I()
+        
+        function set.r(l, v)
+            %Link.r Set centre of gravity
+            %
+            % L.r = R sets the link centre of gravity (COG) to R (3-vector).
+            %
+            
+            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            
+            if isempty(v)
+                return;
+            end
+            if length(v) ~= 3
+                error('RTB:Link:badarg', 'COG must be a 3-vector');
+            end
+            
+            tmp_r = v;
+            
+            l.spatial_inertia = mcI(tmp_m, tmp_r, tmp_I);
+        end % set.r()
+        
+        function rr = get.r(l)
+            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            rr = tmp_r;
+        end % get.r()
+        
+        function set.m(l, s)
+            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            tmp_m = s;
+            l.spatial_inertia = mcI(tmp_m, tmp_r, tmp_I);
+        end % set.m()
+        
+        function s = get.m(l)
+            s = l.spatial_inertia(6, 6);
+        end % get.m()
     end
 end
 

@@ -6,6 +6,7 @@ classdef TreeLink < handle
         name
         manuf
         comment
+        gravity
     end
     
     properties (SetAccess = private)
@@ -25,6 +26,7 @@ classdef TreeLink < handle
             r.name = 'noname';
             r.manuf = '';
             r.comment = '';
+            r.gravity = [0; 0; -9.81];
             r.links = [];
             r.parent = [];
             r.n = 0;
@@ -35,7 +37,6 @@ classdef TreeLink < handle
             opt.manufacturer = [];
             opt.offset = [];
             opt.qlim = [];
-            opt.parent = [];
 
             [opt,out] = tb_optparse(opt, varargin);
             if ~isempty(out)
@@ -54,7 +55,6 @@ classdef TreeLink < handle
                 r.n = length(r.links);
             end
             
-            
             % copy the properties to robot object
             p = properties(r);
             for i=1:length(p)
@@ -63,18 +63,21 @@ classdef TreeLink < handle
                 end
             end
             
-            if isempty(r.parent)
-                r.parent = 0:(r.n-1);
-            elseif length(r.parent) ~= length(r.links)
-                error('parent size does not match links size')
-            end
+            r.parent = 0:(r.n-1);
         end
         
         function addLink(r, L, p)
+            if isempty(L)
+                return;
+            end
             if ischar(p)
                 par = find(strcmp(r.names, p));
             else
                 par = p;
+            end
+            
+            if length(L) > 1
+                par = [par, (length(r.links)+1):(length(r.links)+length(L)-1)];
             end
             
             r.links = [r.links L];
