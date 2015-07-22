@@ -82,6 +82,8 @@ classdef TreeLink < handle
             
             r.links = [r.links L];
             r.parent = [r.parent par];
+            
+            r.n = length(r.links);
         end
         
         function set.offset(r, v)
