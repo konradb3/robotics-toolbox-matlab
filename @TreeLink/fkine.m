@@ -5,13 +5,13 @@ function [ t, allt ] = fkine( robot, q, varargin )
 if nargin < 3
     tip = robot.n;
 else
-    tip = varargin{3};
+    tip = varargin{1};
 end
 
 if nargin < 4
     base = 0;
 else
-    base = varargin{4};
+    base = varargin{2};
 end
 
 if ischar(tip)

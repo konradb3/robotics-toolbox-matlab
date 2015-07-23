@@ -135,7 +135,7 @@ classdef Link2 < handle
             else
                 error('RTB:Link2:badtype', 'type must be set to ''revolute'' or ''prismatic'' ');
             end
-            T = j_trans * L.transform;
+            T = L.transform * j_trans;
         end
         
         function v = twist(l, qd)
