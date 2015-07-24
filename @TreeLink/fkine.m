@@ -1,17 +1,31 @@
 function [ t, allt ] = fkine( robot, q, varargin )
 %FKINE Summary of this function goes here
 %   Detailed explanation goes here
+t = eye(4, 4);
 
 if nargin < 3
     tip = robot.n;
 else
-    tip = varargin{1};
+    tip = robot.ln2i(varargin{1});
+    if isempty(tip)
+        vtip = find(strcmp({robot.virtual_links.name}, varargin{1}));
+        
+        if isempty(vtip)
+            error('');
+        end
+        
+        tip = robot.ln2i(robot.virtual_links(vtip).parent);
+        t = robot.virtual_links(vtip).origin;
+    end
 end
 
 if nargin < 4
     base = 0;
 else
-    base = varargin{2};
+    base = robot.ln2i(varargin{2});
+    if isempty(base)
+        error('robot does not contain specyfied base link');
+    end
 end
 
 if ischar(tip)
@@ -25,8 +39,6 @@ if ischar(base)
 else
     cbase = base;
 end
-
-t = eye(4, 4);
 
 allt = [];
 

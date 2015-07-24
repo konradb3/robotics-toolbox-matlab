@@ -50,11 +50,19 @@ opt.tip = [];
 opt.base = 0;
 opt = tb_optparse(opt, varargin);
 
+U = eye(4, 4);
+
 if ~isempty(opt.tip)
-    if ischar(opt.tip)
-        ctip = find(strcmp(robot.names, opt.tip));
-    else
-        ctip = opt.tip;
+    ctip = robot.ln2i(opt.tip);
+    if isempty(ctip)
+        vtip = find(strcmp({robot.virtual_links.name}, varargin{1}));
+        
+        if isempty(vtip)
+            error('');
+        end
+        
+        ctip = robot.ln2i(robot.virtual_links(vtip).parent);
+        U = robot.virtual_links(vtip).origin;
     end
 else
     ctip = length(robot.links);
@@ -74,22 +82,19 @@ if isa(q, 'sym')
 else
     J = zeros(6, robot.n);
 end
-U = eye(4, 4);
+
 
 while ctip ~= cbase
-    U = L(ctip).pose(q(ctip)) * U;
-    if strcmp(L(ctip).type, 'revolute')
-        % revolute axis
-        d = [   -U(1,1)*U(2,4)+U(2,1)*U(1,4)
-            -U(1,2)*U(2,4)+U(2,2)*U(1,4)
-            -U(1,3)*U(2,4)+U(2,3)*U(1,4)];
-        delta = U(3,1:3)';  % nz oz az
-    else
-        % prismatic axis
-        d = U(3,1:3)';      % nz oz az
-        delta = zeros(3,1); %  0  0  0
-    end
-    J(:,ctip) = [d; delta];
+    
+    joint_twist = L(ctip).twist(1);
+
+    T_local = L(ctip).pose(q(ctip));
+    
+    joint_twist = [tr2r(U),  skew(tr2t(U)); zeros(3), tr2r(U)] * joint_twist';
+    
+    J(:, ctip) = joint_twist;
+    
+    U = T_local * U;
     
     ctip = robot.parent(ctip);
 end

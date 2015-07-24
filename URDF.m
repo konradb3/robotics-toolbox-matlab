@@ -69,7 +69,10 @@ classdef URDF
                     parent = link.parent;
                 end
                 r.addLink(Link2('name', link.name, 'type', link.type, 'axis', link.axis, 'transform', link.transform), parent);
-                
+            end
+            
+            for vlink = vl
+                r.addVirtualLink(vlink.name, vlink.parent, vlink.transform);
             end
             
         end
@@ -118,17 +121,6 @@ classdef URDF
             end
         end
         
-        function t = make_transform(urdf, tr)
-            if ~isempty(tr.quat)
-                q = Quaternion(tr.quat);
-                rot = q.R;
-            else
-                rot = rpy2r(tr.rpy);
-            end
-            
-            t = rt2tr(rot, tr.xyz(:));
-        end
-        
         function n = nlinks(urdf)
             n = length(urdf.links);
         end
@@ -162,6 +154,17 @@ classdef URDF
     end
     
     methods (Static)
+        function t = make_transform(tr)
+            if ~isempty(tr.quat)
+                q = Quaternion(tr.quat);
+                rot = q.R;
+            else
+                rot = rpy2r(tr.rpy);
+            end
+            
+            t = rt2tr(rot, tr.xyz(:));
+        end
+        
         function joint = parseJoint(node)
             val = URDF.getAttributeValue(node, 'name');
             if isempty(val)

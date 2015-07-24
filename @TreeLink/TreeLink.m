@@ -12,6 +12,7 @@ classdef TreeLink < handle
     properties (SetAccess = private)
         n
         links
+        virtual_links;
         parent
     end
     
@@ -70,11 +71,8 @@ classdef TreeLink < handle
             if isempty(L)
                 return;
             end
-            if ischar(p)
-                par = find(strcmp(r.names, p));
-            else
-                par = p;
-            end
+            
+            par = r.ln2i(p);
             
             if length(L) > 1
                 par = [par, (length(r.links)+1):(length(r.links)+length(L)-1)];
@@ -84,6 +82,22 @@ classdef TreeLink < handle
             r.parent = [r.parent par];
             
             r.n = length(r.links);
+        end
+        
+        function addVirtualLink(r, name, parent, origin)
+            vl.name = name;
+            vl.parent = parent;
+            vl.origin = origin;
+            
+            r.virtual_links = [r.virtual_links, vl];
+        end
+        
+        function i = ln2i(r, p)
+            if ischar(p)
+                i = find(strcmp(r.names, p));
+            else
+                i = p;
+            end
         end
         
         function set.offset(r, v)
