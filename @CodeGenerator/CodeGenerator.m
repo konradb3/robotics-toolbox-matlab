@@ -176,11 +176,11 @@ classdef CodeGenerator
         %  2012 RST, Technische Universitaet Dortmund, Germany.
         %  http://www.rst.e-technik.tu-dortmund.de
 
-            if ~isa(rob,'SerialLink')
-                error('CodeGenerator:wrongConstructorInput','The input variable %s must be a SerialLink object.',inputname(1));
-            end
+            %if ~isa(rob,'SerialLink')
+            %    error('CodeGenerator:wrongConstructorInput','The input variable %s must be a SerialLink object.',inputname(1));
+            %end
             
-            if ~issym(rob)
+            if ~rob.issym()
                 CGen.rob = rob.sym;
             else
                 CGen.rob = rob;

@@ -71,8 +71,14 @@ CGen.logmsg('\t%s\n',' done!');
 CGen.logmsg([datestr(now),'\tGenerating forward kinematics m-function up to joint: ']);
 for iJoints=1:CGen.rob.n
     
+    if isempty(CGen.rob.links(iJoints).name)
+        link_name = num2str(iJoints);
+    else
+        link_name = CGen.rob.links(iJoints).name;
+    end
+    
     CGen.logmsg(' %i ',iJoints);
-    symname = ['T0_',num2str(iJoints)];
+    symname = ['T0_',link_name];
     fname = fullfile(CGen.sympath,[symname,'.mat']);
     
     tmpStruct = struct;

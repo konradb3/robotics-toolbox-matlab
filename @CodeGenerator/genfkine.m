@@ -70,8 +70,13 @@ if CGen.saveresult
     CGen.logmsg([datestr(now),'\tSaving symbolic forward kinematics for joint']);
     
     for iJoint = 1:CGen.rob.n
-        CGen.logmsg(' %s ',num2str(iJoint));
-        tName = ['T0_',num2str(iJoint)];
+        if isempty(CGen.rob.links(iJoint).name)
+            link_name = num2str(iJoint);
+        else
+            link_name = CGen.rob.links(iJoint).name;
+        end
+        CGen.logmsg(' %s ',iJoint);
+        tName = ['T0_',link_name];
         eval([tName,' = allT(:,:,',num2str(iJoint),');']);
         CGen.savesym(eval(tName),tName,[tName,'.mat']);
     end

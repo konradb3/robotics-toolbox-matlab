@@ -1,5 +1,5 @@
 classdef TreeLink < handle
-    %UNTITLED2 Summary of this class goes here
+    %TreeLink Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
@@ -48,7 +48,16 @@ classdef TreeLink < handle
                 % zero argument constructor, sets default values
                 return;
             else
-                if isa(L, 'Link2')
+                if isa(L, 'TreeLink')
+                    % clone the passed robot
+                    for j=1:L.n
+                        newlinks(j) = copy(L.links(j));
+                    end
+                    r.links = newlinks;
+                    r.name = L.name;
+                    r.parent = L.parent;
+                    r.virtual_links = L.virtual_links;
+                elseif isa(L, 'Link2')
                     r.links = L;    % attach the links
                 else
                     error('unknown type passed to robot');
@@ -64,7 +73,9 @@ classdef TreeLink < handle
                 end
             end
             
-            r.parent = 0:(r.n-1);
+            if isempty(r.parent)
+                r.parent = 0:(r.n-1);
+            end
         end
         
         function addLink(r, L, p)
@@ -155,6 +166,13 @@ classdef TreeLink < handle
 
         function v = get.names(r)
             v = {r.links.name};
+        end
+        
+        function sr = sym(r)
+            sr = TreeLink(r);
+            for i = 1:sr.n
+                sr.links(i) = r.links(i).sym;
+            end
         end
     end
     

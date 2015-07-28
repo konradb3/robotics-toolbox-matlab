@@ -46,8 +46,6 @@ classdef URDF
                 if ~isfield(urdf.joints{j}, 'parent')
                     error('joint without parrent [%s]', urdf.joints{j}.name);
                 end
-                %i = urdf.ln2i( urdf.joints{j}.parent);
-                %p(i) = p(i) + 1;
                 i = urdf.ln2i( urdf.joints{j}.child);
                 p(i) = p(i) - 1;
             end
@@ -57,10 +55,21 @@ classdef URDF
             urdf.base_link_name = urdf.links{base_link}.name;
         end
         
-        function r = robot(urdf)
+        function r = robot(urdf, varargin)
+            
+            % process the rest of the arguments in key, value pairs
+            opt.base = urdf.base_link_name;
+            opt.blacklist = [];
+
+            [opt,out] = tb_optparse(opt, varargin);
+            if ~isempty(out)
+                error('unknown option <%s>', out{1});
+            end
+            
             r = TreeLink();
-            base_name = urdf.base_link_name;
-            [l, vl] = urdf.makelinks(base_name);
+            r.name = urdf.name;
+            base_name = opt.base;
+            [l, vl] = urdf.makelinks(base_name, opt.blacklist);
             
             for link = l
                 if strcmp(link.parent, base_name)
@@ -77,19 +86,23 @@ classdef URDF
             
         end
         
-        function [l, vl] = makelinks(urdf, name)
+        function [l, vl] = makelinks(urdf, name, blacklist)
             l = [];
             vl = [];
             j = urdf.findnextjoint(name);
             for i = j
                 joint = urdf.joints{i};
                 
+                if ~isempty(find(strcmp(blacklist, joint.child), 1))
+                    continue;
+                end
+                
                 if strcmp(joint.type, 'fixed')
                     cvl.parent = name;
                     cvl.name = joint.child;
                     cvl.transform = urdf.make_transform(joint.origin);
                     
-                    [ll, vvl] = urdf.makelinks(joint.child);
+                    [ll, vvl] = urdf.makelinks(joint.child, blacklist);
                     
                     for n = 1:length(ll)
                         if strcmp(ll(n).parent, joint.child)
@@ -114,7 +127,7 @@ classdef URDF
                     link.axis =  joint.axis;
                     link.transform = urdf.make_transform(joint.origin);
                     link.parent = name;
-                    [ll, vvl] = urdf.makelinks(joint.child);
+                    [ll, vvl] = urdf.makelinks(joint.child, blacklist);
                     l = [l, link, ll];
                     vl = [vl, vvl];
                 end
@@ -159,7 +172,7 @@ classdef URDF
                 q = Quaternion(tr.quat);
                 rot = q.R;
             else
-                rot = rpy2r(tr.rpy);
+                rot = rpy2r(round(tr.rpy/pi, 10)*pi);
             end
             
             t = rt2tr(rot, tr.xyz(:));

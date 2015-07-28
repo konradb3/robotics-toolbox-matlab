@@ -9,7 +9,7 @@ classdef Link2 < handle
         offset % joint coordinate offset
         qlim % joint coordinate limits (2x1)
         
-        transform % link transformation
+        origin % link transformation
         
         spatial_inertia % spatial inertia of link
     end
@@ -33,11 +33,11 @@ classdef Link2 < handle
                 l.axis = [0 0 0];
                 l.offset = 0;
                 l.qlim = [];
-                l.transform = eye(4);
+                l.origin = eye(4);
                 
                 %% dynamic parameters
                 % these parameters must be set by the user if dynamics is used
-                l.inertia = zeros(6);
+                l.spatial_inertia = zeros(6);
             elseif nargin == 1 && isa(varargin{1}, 'Link2')
                 % clone the passed Link object
                 l = copy(varargin{1});
@@ -64,7 +64,7 @@ classdef Link2 < handle
                     l.offset = value( opt.offset, opt);
                     l.qlim =   value( opt.qlim, opt);
                     
-                    l.transform = value( opt.transform, opt);
+                    l.origin = value( opt.transform, opt);
                     
                     l.spatial_inertia = value( opt.inertia, opt);
                 end
@@ -135,7 +135,7 @@ classdef Link2 < handle
             else
                 error('RTB:Link2:badtype', 'type must be set to ''revolute'' or ''prismatic'' ');
             end
-            T = L.transform * j_trans;
+            T = L.origin * j_trans;
         end
         
         function v = twist(l, qd)
@@ -159,7 +159,7 @@ classdef Link2 < handle
                 return;
             end
             
-            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            [tmp_m, tmp_r, ~] = mcI(l.spatial_inertia);
             
             if all(size(v) == [3 3])
                 if isa(v, 'double') && norm(v-v') > eps
@@ -180,7 +180,7 @@ classdef Link2 < handle
         end % set.I()
         
         function i = get.I(l)
-            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            [~, ~, tmp_I] = mcI(l.spatial_inertia);
             i = tmp_I;
         end % get.I()
         
@@ -190,7 +190,7 @@ classdef Link2 < handle
             % L.r = R sets the link centre of gravity (COG) to R (3-vector).
             %
             
-            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            [tmp_m, ~, tmp_I] = mcI(l.spatial_inertia);
             
             if isempty(v)
                 return;
@@ -205,12 +205,12 @@ classdef Link2 < handle
         end % set.r()
         
         function rr = get.r(l)
-            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            [~, tmp_r, ~] = mcI(l.spatial_inertia);
             rr = tmp_r;
         end % get.r()
         
         function set.m(l, s)
-            [tmp_m, tmp_r, tmp_I] = mcI(l.spatial_inertia);
+            [~, tmp_r, tmp_I] = mcI(l.spatial_inertia);
             tmp_m = s;
             l.spatial_inertia = mcI(tmp_m, tmp_r, tmp_I);
         end % set.m()
@@ -218,6 +218,47 @@ classdef Link2 < handle
         function s = get.m(l)
             s = l.spatial_inertia(6, 6);
         end % get.m()
+        
+        function res = issym(l)
+            %Link.issym Check if link is a symbolic model
+            %
+            % res = L.issym() is true if the Link L has symbolic parameters.
+ 
+            res = isa(l.origin,'sym');
+        end
+        
+        % Make a copy of a handle object.
+        % http://www.mathworks.com/matlabcentral/newsreader/view_thread/257925
+        function new = copy(this)
+            
+            for j=1:length(this)
+                % Instantiate new object of the same class.
+                %new(j) = feval(class(this(j)));
+                new(j) = Link2();
+                % Copy all non-hidden properties.
+                p = properties(this(j));
+                for i = 1:length(p)
+                    new(j).(p{i}) = this(j).(p{i});
+                end
+            end
+        end
+        
+        function sl = sym(l)
+            
+            sl = Link2(l);   % clone the link
+            
+            sl.axis = sym(sl.axis);
+            sl.origin = sym(sl.origin);
+            sl.offset = sym(sl.offset);
+            
+            sl.spatial_inertia = sym(sl.spatial_inertia);
+            
+%             sl.Jm = sym(sl.Jm);
+%             sl.G = sym(sl.G);
+%             sl.B = sym(sl.B);
+%             sl.Tc = sym(sl.Tc);
+            
+        end
     end
 end
 

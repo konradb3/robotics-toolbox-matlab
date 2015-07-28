@@ -3,12 +3,17 @@ function [ t, allt ] = fkine( robot, q, varargin )
 %   Detailed explanation goes here
 t = eye(4, 4);
 
-if nargin < 3
+
+opt.tip = [];
+opt.base = [];
+opt = tb_optparse(opt, varargin);
+
+if isempty(opt.tip)
     tip = robot.n;
 else
-    tip = robot.ln2i(varargin{1});
+    tip = robot.ln2i(opt.tip);
     if isempty(tip)
-        vtip = find(strcmp({robot.virtual_links.name}, varargin{1}));
+        vtip = find(strcmp({robot.virtual_links.name}, opt.tip));
         
         if isempty(vtip)
             error('');
@@ -19,10 +24,10 @@ else
     end
 end
 
-if nargin < 4
+if isempty(opt.base)
     base = 0;
 else
-    base = robot.ln2i(varargin{2});
+    base = robot.ln2i(opt.base);
     if isempty(base)
         error('robot does not contain specyfied base link');
     end
@@ -40,12 +45,22 @@ else
     cbase = base;
 end
 
-allt = [];
+if nargout > 1
+    allt = zeros(4,4,robot.n);
+    if isa(q,'sym')
+        allt = sym(allt);
+    end
+end
 
 while ctip ~= cbase
     t = robot.links(ctip).pose(q(ctip)) * t;
-    allt = [t, allt];
     ctip = robot.parent(ctip);
+end
+
+if nargout > 1
+    parfor i = 1:robot.n
+        allt(:,:,i) = robot.fkine(q, i, cbase); % intermediate transformations
+    end
 end
 
 if isa(t, 'sym')

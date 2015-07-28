@@ -67,7 +67,7 @@ if ~isempty(find_system(CGen.slib,'SearchDepth',1,'Name',symname))              
     save_system;
 end
 
-symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q'});
+symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q'}, 'outputs', {'T'});
 
 CGen.logmsg('\t%s\n',' done!');
 
@@ -75,8 +75,14 @@ CGen.logmsg('\t%s\n',' done!');
 CGen.logmsg([datestr(now),'\tGenerating forward kinematics Simulink block up to joint']);
 for iJoints=1:CGen.rob.n
     
+    if isempty(CGen.rob.links(iJoints).name)
+        link_name = num2str(iJoints);
+    else
+        link_name = CGen.rob.links(iJoints).name;
+    end
+    
     CGen.logmsg(' %i ',iJoints);
-    symname = ['T0_',num2str(iJoints)];
+    symname = ['T0_', link_name];
     fname = fullfile(CGen.sympath,[symname,'.mat']);
     
     tmpStruct = struct;
@@ -92,9 +98,24 @@ for iJoints=1:CGen.rob.n
         save_system;
     end
     
-    symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q});
+    symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q}, 'outputs', {'T'});
     
+    sym_links{iJoints} = tmpStruct.(symname);
 end
+CGen.logmsg('\t%s\n',' done!');
+
+%% Forward kinematics for all likns
+CGen.logmsg([datestr(now),'\tGenerating forward kinematics Simulink block for all links']);
+symname = 'T0_all';
+
+blockaddress = [CGen.slib,'/',symname];          % treat intermediate transformations separately
+if ~isempty(find_system(CGen.slib,'SearchDepth',1,'Name',symname))                    % Delete previously generated block
+    delete_block(blockaddress);
+    save_system;
+end
+
+symexpr2slblock(blockaddress,sym_links{:},'vars',{q'}, 'outputs', CGen.rob.names);
+
 CGen.logmsg('\t%s\n',' done!');
 
 %% Cleanup
