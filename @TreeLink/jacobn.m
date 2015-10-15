@@ -106,6 +106,6 @@ elseif opt.rot
 end
 
 if isa(J, 'sym')
-    J = simplify(J);
+%    J = simplify(J);
 end
 end

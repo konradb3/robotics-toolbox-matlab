@@ -56,14 +56,28 @@ function [J0, Jn] = genjacobian(CGen)
 CGen.logmsg([datestr(now),'\tDeriving robot jacobians']);
 
 q = CGen.rob.gencoords;
-J0 = CGen.rob.jacob0(q);
-Jn = CGen.rob.jacobn(q);
 
+for i = 1:CGen.rob.n
+    J0{i} = CGen.rob.jacob0(q, 'tip', i);
+    Jn{i} = CGen.rob.jacobn(q, 'tip', i);
+end
 CGen.logmsg('\t%s\n',' done!');
 
 %% Save symbolic expressions
 if CGen.saveresult
     CGen.logmsg([datestr(now),'\tSaving symbolic robot jacobians']);
+    
+    for i = 1:CGen.rob.n
+        if isempty(CGen.rob.links(i).name)
+            link_name = num2str(iJoint);
+        else
+            link_name = CGen.rob.links(i).name;
+        end
+        
+        tName = ['Jn_',link_name];
+        eval([tName,' = Jn{',num2str(i),'};']);
+        CGen.savesym(eval(tName),tName,[tName,'.mat']);
+    end
     
     CGen.savesym(J0,'jacob0','jacob0.mat');
     CGen.savesym(Jn,'jacobn','jacobn.mat');

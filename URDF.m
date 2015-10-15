@@ -60,6 +60,7 @@ classdef URDF
             % process the rest of the arguments in key, value pairs
             opt.base = urdf.base_link_name;
             opt.blacklist = [];
+            opt.symbolic = false;
 
             [opt,out] = tb_optparse(opt, varargin);
             if ~isempty(out)
@@ -69,7 +70,7 @@ classdef URDF
             r = TreeLink();
             r.name = urdf.name;
             base_name = opt.base;
-            [l, vl] = urdf.makelinks(base_name, opt.blacklist);
+            [l, vl] = urdf.makelinks(base_name, opt.blacklist, opt.symbolic);
             
             for link = l
                 if strcmp(link.parent, base_name)
@@ -86,7 +87,7 @@ classdef URDF
             
         end
         
-        function [l, vl] = makelinks(urdf, name, blacklist)
+        function [l, vl] = makelinks(urdf, name, blacklist, symbolic)
             l = [];
             vl = [];
             j = urdf.findnextjoint(name);
@@ -100,21 +101,21 @@ classdef URDF
                 if strcmp(joint.type, 'fixed')
                     cvl.parent = name;
                     cvl.name = joint.child;
-                    cvl.transform = urdf.make_transform(joint.origin);
+                    cvl.transform = urdf.make_transform(joint.origin, symbolic);
                     
-                    [ll, vvl] = urdf.makelinks(joint.child, blacklist);
+                    [ll, vvl] = urdf.makelinks(joint.child, blacklist, symbolic);
                     
                     for n = 1:length(ll)
                         if strcmp(ll(n).parent, joint.child)
                           ll(n).parent = name;
-                          ll(n).transform = urdf.make_transform(joint.origin) * ll(n).transform;
+                          ll(n).transform = urdf.make_transform(joint.origin, symbolic) * ll(n).transform;
                         end
                     end
                     
                     for n = 1:length(vvl)
                         if strcmp(vvl(n).parent, joint.child)
                           vvl(n).parent = name;
-                          vvl(n).transform = urdf.make_transform(joint.origin) * vvl(n).transform;
+                          vvl(n).transform = urdf.make_transform(joint.origin, symbolic) * vvl(n).transform;
                         end
                     end
                     
@@ -124,10 +125,14 @@ classdef URDF
                 else
                     link.name = joint.child;
                     link.type = joint.type;
-                    link.axis =  joint.axis;
-                    link.transform = urdf.make_transform(joint.origin);
+                    if symbolic
+                        link.axis =  sym(joint.axis);
+                    else
+                        link.axis =  joint.axis;
+                    end
+                    link.transform = urdf.make_transform(joint.origin, symbolic);
                     link.parent = name;
-                    [ll, vvl] = urdf.makelinks(joint.child, blacklist);
+                    [ll, vvl] = urdf.makelinks(joint.child, blacklist, symbolic);
                     l = [l, link, ll];
                     vl = [vl, vvl];
                 end
@@ -167,12 +172,21 @@ classdef URDF
     end
     
     methods (Static)
-        function t = make_transform(tr)
+        function t = make_transform(tr, symbolic)
             if ~isempty(tr.quat)
-                q = Quaternion(tr.quat);
+                if symbolic
+                    quat = sym(tr.quat);
+                else
+                    quat = tr.quat;
+                end
+                q = Quaternion(quat);
                 rot = q.R;
             else
-                rot = rpy2r(round(tr.rpy/pi, 10)*pi);
+                if symbolic
+                    rot = rpy2r(sym('pi')./sym(round(pi./tr.rpy, 10)));
+                else
+                    rot = rpy2r(pi./round(pi./tr.rpy, 10));
+                end
             end
             
             t = rt2tr(rot, tr.xyz(:));

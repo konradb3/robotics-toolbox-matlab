@@ -53,7 +53,8 @@ function [t allt] = fkine(robot, q, varargin)
 n = robot.n;
 
 opt.deg = false;
-
+opt.tip = [];
+opt.base = [];
 opt = tb_optparse(opt, varargin);
 
 if opt.deg
