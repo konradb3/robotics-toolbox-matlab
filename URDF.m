@@ -175,19 +175,20 @@ classdef URDF
         function t = make_transform(tr, symbolic)
             if ~isempty(tr.quat)
                 if symbolic
-                    quat = sym(tr.quat);
+                    quat = sym([tr.quat(4) tr.quat(1) tr.quat(2) tr.quat(3)]);
                 else
-                    quat = tr.quat;
+                    quat = [tr.quat(4) tr.quat(1) tr.quat(2) tr.quat(3)];
                 end
-                q = Quaternion(quat);
-                rot = q.R;
             else
                 if symbolic
-                    rot = rpy2r(sym('pi')./sym(round(pi./tr.rpy, 10)));
+                    rpy = sym(tr.rpy);
                 else
-                    rot = rpy2r(pi./round(pi./tr.rpy, 10));
+                    rpy = tr.rpy;
                 end
+                quat = rpy2quat(rpy);
             end
+            
+            rot = quat2r(quat);
             
             t = rt2tr(rot, tr.xyz(:));
         end
