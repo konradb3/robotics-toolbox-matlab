@@ -110,11 +110,6 @@
 classdef CodeGenerator
     properties (SetAccess = private)
         rob
-        ccodepath;
-        cppcodepath;
-        robjpath;
-        sympath;
-        slibpath;
     end
     properties
         basepath;
@@ -127,6 +122,11 @@ classdef CodeGenerator
         genccode;
         genmex;
         compilemex;
+        ccodepath;
+        cppcodepath;
+        robjpath;
+        sympath;
+        slibpath;
     end
     properties (GetAccess = private)
         debug;        % just appears because of tb_optparse, so hide it from the user

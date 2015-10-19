@@ -49,47 +49,62 @@ set_param(CGen.slib,'lock','off');
 
 q = CGen.rob.gencoords;
 %% Jacobian0
-CGen.logmsg([datestr(now),'\tGenerating jacobian Embedded Matlab Function Block with respect to the robot base frame']);
-%     [datestr(now),'\tGenerating jacobian Embedded Matlab Function Block with respect to the end-effector frame']);
-symname = 'jacob0';
-fname = fullfile(CGen.sympath,[symname,'.mat']);
-
-if exist(fname,'file')
+CGen.logmsg([datestr(now),'\tGenerating base jacobian Simulink block up to joint']);
+for iJoints=1:CGen.rob.n
+    
+    if isempty(CGen.rob.links(iJoints).name)
+        link_name = num2str(iJoints);
+    else
+        link_name = CGen.rob.links(iJoints).name;
+    end
+    
+    CGen.logmsg(' %i ',iJoints);
+    symname = ['J0_', link_name];
+    fname = fullfile(CGen.sympath,[symname,'.mat']);
+    
     tmpStruct = load(fname);
-else
-    error ('genSLBlockFkine:SymbolicsNotFound','Save symbolic expressions to disk first!')
+    
+    q = CGen.rob.gencoords;
+    
+    
+    blockaddress = [CGen.slib,'/',symname];          % treat intermediate transformations separately
+    if doesblockexist(CGen.slib,symname)
+        delete_block(blockaddress);
+        save_system;
+    end
+    
+    symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q}, 'outputs', {'J'});
 end
-
-blockaddress = [CGen.slib,'/',symname];          % treat intermediate transformations separately
-if ~isempty(find_system(CGen.slib,'SearchDepth',1,'Name',symname))                    % Delete previously generated block
-    delete_block(blockaddress);
-    save_system;
-end
-
-symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q});
-
 CGen.logmsg('\t%s\n',' done!');
 
-%% Jacobn
-CGen.logmsg([datestr(now),'\tGenerating jacobian Embedded Matlab Function Block with respect to the end-effector frame']);
-symname = 'jacobn';
-fname = fullfile(CGen.sympath,[symname,'.mat']);
-
-if exist(fname,'file')
+%% Jacobiann
+CGen.logmsg([datestr(now),'\tGenerating end-effector jacobian Simulink block up to joint']);
+for iJoints=1:CGen.rob.n
+    
+    if isempty(CGen.rob.links(iJoints).name)
+        link_name = num2str(iJoints);
+    else
+        link_name = CGen.rob.links(iJoints).name;
+    end
+    
+    CGen.logmsg(' %i ',iJoints);
+    symname = ['Jn_', link_name];
+    fname = fullfile(CGen.sympath,[symname,'.mat']);
+    
     tmpStruct = load(fname);
-else
-    error ('genSLBlockFkine:SymbolicsNotFound','Save symbolic expressions to disk first!')
+    
+    q = CGen.rob.gencoords;
+    
+    
+    blockaddress = [CGen.slib,'/',symname];          % treat intermediate transformations separately
+    if doesblockexist(CGen.slib,symname)
+        delete_block(blockaddress);
+        save_system;
+    end
+    
+    symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q}, 'outputs', {'J'});
 end
-
-blockaddress = [CGen.slib,'/',symname];          % treat intermediate transformations separately
-if ~isempty(find_system(CGen.slib,'SearchDepth',1,'Name',symname))                    % Delete previously generated block
-    delete_block(blockaddress);
-    save_system;
-end
-
-symexpr2slblock(blockaddress,tmpStruct.(symname),'vars',{q'});
 CGen.logmsg('\t%s\n',' done!');
-
 %% Cleanup
 % Arrange blocks
 distributeblocks(CGen.slib);

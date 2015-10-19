@@ -77,10 +77,14 @@ if CGen.saveresult
         tName = ['Jn_',link_name];
         eval([tName,' = Jn{',num2str(i),'};']);
         CGen.savesym(eval(tName),tName,[tName,'.mat']);
+        
+        tName = ['J0_',link_name];
+        eval([tName,' = J0{',num2str(i),'};']);
+        CGen.savesym(eval(tName),tName,[tName,'.mat']);
     end
     
-    CGen.savesym(J0,'jacob0','jacob0.mat');
-    CGen.savesym(Jn,'jacobn','jacobn.mat');
+    %CGen.savesym(J0,'jacob0','jacob0.mat');
+    %CGen.savesym(Jn,'jacobn','jacobn.mat');
     
     CGen.logmsg('\t%s\n',' done!');
 end
